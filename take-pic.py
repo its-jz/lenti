@@ -3,7 +3,7 @@ import RPi.GPIO as GPIO
 import cv2
 from PIL import Image
 import numpy as np
-
+from datetime import datetime
 
 red,green,blue = 11,13,15
 button = 16
@@ -67,8 +67,11 @@ def interlace(img1,img2):
 
 	output = image1 + image2
 	
+	name = str(datetime.now()).replace(" ", "_")
+
+	
 	im = Image.fromarray(output)
-	im.save("./output/image595.jpeg",dpi=(NUM*LPI, NUM*60))
+	im.save("./output/"+name+".jpeg",dpi=(NUM*LPI, NUM*60))
 	print("outputted")
 	
 	
