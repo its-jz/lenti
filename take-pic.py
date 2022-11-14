@@ -5,6 +5,10 @@ from PIL import Image
 import numpy as np
 from datetime import datetime
 
+from tkinter import *
+from PIL import Image, ImageTk
+import cv2
+
 red,green,blue = 11,13,15
 button = 16
 
@@ -40,7 +44,6 @@ def toWritableImage(img):
 	return np.transpose(image,(1,0,2))
 	
 def interlace(img1,img2):
-	img1,img2= cv2.cvtColor(img1,cv2.COLOR_BGR2RGB),cv2.cvtColor(img2,cv2.COLOR_BGR2RGB)
 	img1,img2 = Image.fromarray(img1),Image.fromarray(img2)
 	
 	LPI = 60
@@ -67,19 +70,85 @@ def interlace(img1,img2):
 
 	output = image1 + image2
 	
-	name = str(datetime.now()).replace(" ", "_")
+	
 
 	
 	im = Image.fromarray(output)
-	im.save("./output/"+name+".jpeg",dpi=(NUM*LPI, NUM*60))
-	print("outputted")
-	
-	
 
-while True:
-	if(GPIO.input(button) == 0):
-		blink(red)
-		img1,img2 = takePic()
-		interlace(img1,img2)
-	else:
-		turnOff(red)
+	return output
+	
+	# The lines below are for saving the image
+	#name = str(datetime.now()).replace(" ", "_")
+	#im.save("./output/"+name+".jpeg",dpi=(NUM*LPI, NUM*60))
+	#print("outputted")
+
+# 0: preview, 1:picTaken
+# ~ view = 0
+# ~ while True:
+    # ~ # Display the interlaced image on the screen
+
+    # ~ ret1, frame1 = c1.read()
+    # ~ ret2, frame2 = c2.read()
+    # ~ # Preview
+    # ~ if view == 0:
+
+        # ~ interlacedImg = interlace(frame1,frame2)
+        # ~ cv2.imshow("view finder",interlacedImg)
+        # ~ if cv2.waitKey(1) & 0xFF == ord('q'):
+            # ~ break
+        # ~ if (GPIO.input(button) == 0):
+            # ~ print("down")
+            # ~ cv2.destroyAllWindows()
+            # ~ view = 1
+    # ~ if view == 1:
+	# ~ root=Tk()
+	# ~ a = Label(root, text="Hello, world!")
+	# ~ a.pack()
+	# ~ root.mainloop()
+
+        
+# ~ c1.release()
+# ~ c2.release()
+# ~ cv2.destroyAllWindows()
+    
+from tkinter import messagebox
+    
+width, height = 800, 600
+
+root = Tk()
+lmain = Label(root)
+lmain.pack()
+
+def show_frame():
+	ret1, frame1 = c1.read()
+	ret2, frame2 = c2.read()
+	frame1 = cv2.flip(frame1, 1)
+	frame2 = cv2.flip(frame2, 1)
+	frame = interlace(frame1,frame2)
+	cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+	img = Image.fromarray(cv2image)
+	imgtk = ImageTk.PhotoImage(image=img)
+	lmain.imgtk = imgtk
+	lmain.configure(image=imgtk)
+	lmain.after(10, show_frame)
+	if (GPIO.input(button) == 0):
+		tempName = str(datetime.now()).replace(" ","_")
+		filePath = "./previews/"+tempName
+		toSave = Image.fromarray(frame)
+		cv2.imwrite(filePath,toSave)
+		img = ImageTk.PhotoImage(Image.open(filePath))
+		# Create a Label Widget to display the text or Image
+		lmain.imgtk = img
+		lmain.configure(image=img)
+		lmain.after(10, show_frame)
+def helloCallBack():
+	messagebox.showinfo( "Hello Python", "Hello World")
+
+printBtn = Button(root, text ="Print", command = helloCallBack)
+printBtn.pack()
+retakeBtn = Button(root, text ="Retake", command = helloCallBack)
+retakeBtn.pack()
+
+
+show_frame()
+root.mainloop()
