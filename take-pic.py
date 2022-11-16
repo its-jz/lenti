@@ -25,18 +25,14 @@ def blink(pin):
 def turnOff(pin):
 	GPIO.setmode(GPIO.BOARD)
 	GPIO.setup(pin, GPIO.OUT)
-	GPIO.output(pin, GPIO.LOW)
-	
+	GPIO.output(pin, GPIO.LOW)	
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(button, GPIO.IN)
-
-
 def takePic():
 	print("taking pictures")
 	ret,img1= c1.read()
 	ret,img2= c2.read()
 	return img1,img2
-
 
 def toWritableImage(img):
 	image = np.array(img)
@@ -82,42 +78,44 @@ def interlace(img1,img2):
 	#im.save("./output/"+name+".jpeg",dpi=(NUM*LPI, NUM*60))
 	#print("outputted")
 
-# 0: preview, 1:picTaken
-# ~ view = 0
-# ~ while True:
-    # ~ # Display the interlaced image on the screen
 
-    # ~ ret1, frame1 = c1.read()
-    # ~ ret2, frame2 = c2.read()
-    # ~ # Preview
-    # ~ if view == 0:
-
-        # ~ interlacedImg = interlace(frame1,frame2)
-        # ~ cv2.imshow("view finder",interlacedImg)
-        # ~ if cv2.waitKey(1) & 0xFF == ord('q'):
-            # ~ break
-        # ~ if (GPIO.input(button) == 0):
-            # ~ print("down")
-            # ~ cv2.destroyAllWindows()
-            # ~ view = 1
-    # ~ if view == 1:
-	# ~ root=Tk()
-	# ~ a = Label(root, text="Hello, world!")
-	# ~ a.pack()
-	# ~ root.mainloop()
-
-        
-# ~ c1.release()
-# ~ c2.release()
-# ~ cv2.destroyAllWindows()
-    
 from tkinter import messagebox
     
-width, height = 800, 600
+# ~ width, height = 800, 480
 
 root = Tk()
+root.minsize(800, 480)
+root.maxsize(800, 480)
 lmain = Label(root)
 lmain.pack()
+
+
+def open_popup(previewImg):
+	top= Toplevel(root)
+	top.geometry("600x300")
+	top.title("Child Window")
+	# Label(top, text= "Hello World!", font=('Mistral 18 bold')).place(x=150,y=80)
+	
+	def helloCallBack():
+		messagebox.showinfo( "Hello Python", "Hello World")
+	printBtn = Button(top, text ="Print", command = helloCallBack)
+	printBtn.place(x=240, y=250)
+	retakeBtn = Button(top, text ="Retake", command = helloCallBack)
+	retakeBtn.place(x=300, y=250)
+	
+	imageFrame = Label(top,imgtk=img)
+	tempName = str(datetime.now()).replace(" ","_")
+	filePath = "./previews/"+tempName+".jpeg"
+	cv2.imwrite(filePath,previewImg)
+	img = ImageTk.PhotoImage(Image.open(filePath))
+	imageFrame.imgtk = img
+	imageFrame.configure(image=img)
+	imageFrame.after(10, show_frame)
+
+
+
+	
+
 
 def show_frame():
 	ret1, frame1 = c1.read()
@@ -125,30 +123,23 @@ def show_frame():
 	frame1 = cv2.flip(frame1, 1)
 	frame2 = cv2.flip(frame2, 1)
 	frame = interlace(frame1,frame2)
-	cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+	rotatedframe = np.rot90(frame, k=1, axes=(1,0))
+	
+	cv2image = cv2.cvtColor(rotatedframe, cv2.COLOR_BGR2RGBA)
 	img = Image.fromarray(cv2image)
 	imgtk = ImageTk.PhotoImage(image=img)
 	lmain.imgtk = imgtk
 	lmain.configure(image=imgtk)
 	lmain.after(10, show_frame)
 	if (GPIO.input(button) == 0):
-		tempName = str(datetime.now()).replace(" ","_")
-		filePath = "./previews/"+tempName
-		toSave = Image.fromarray(frame)
-		cv2.imwrite(filePath,toSave)
-		img = ImageTk.PhotoImage(Image.open(filePath))
-		# Create a Label Widget to display the text or Image
-		lmain.imgtk = img
-		lmain.configure(image=img)
-		lmain.after(10, show_frame)
-def helloCallBack():
-	messagebox.showinfo( "Hello Python", "Hello World")
+		open_popup(rotatedframe)
+		
 
-printBtn = Button(root, text ="Print", command = helloCallBack)
-printBtn.pack()
-retakeBtn = Button(root, text ="Retake", command = helloCallBack)
-retakeBtn.pack()
+	
+
+
 
 
 show_frame()
+
 root.mainloop()
