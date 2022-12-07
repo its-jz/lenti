@@ -1,6 +1,6 @@
 import tkinter as tk                # python 3
 from tkinter import font as tkfont
-
+import os
 
 import sys, time
 import RPi.GPIO as GPIO
@@ -9,9 +9,16 @@ from PIL import Image,ImageTk
 import numpy as np
 from datetime import datetime
 
+
+
 class SampleApp(tk.Tk):
 
     def __init__(self, *args, **kwargs):
+        if(os.path.exists('./preview.jpeg')):
+            print("file exists")
+            os.remove('./preview.jpeg')
+        else:
+            print("clean no preview")
         tk.Tk.__init__(self, *args, **kwargs)
         self.title_font = tkfont.Font(family='Helvetica', size=18, weight="bold", slant="italic")
 
@@ -23,27 +30,29 @@ class SampleApp(tk.Tk):
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
-        self.frames = {}
-        for F in (ViewFinderPage, PreviewPage, PrintPage):
-            page_name = F.__name__
-            frame = F(parent=container, controller=self)
-            self.frames[page_name] = frame
+        frame = ViewFinderPage(parent=container, controller=self)
+        frame.grid(row=0, column=0, sticky="nsew")
+        # self.frames = {}
+        # for F in (ViewFinderPage, PreviewPage, PrintPage):
+        #     page_name = F.__name__
+        #     frame = F(parent=container, controller=self)
+        #     self.frames[page_name] = frame
 
-            # put all of the pages in the same location;
-            # the one on the top of the stacking order
-            # will be the one that is visible.
-            frame.grid(row=0, column=0, sticky="nsew")
+        #     # put all of the pages in the same location;
+        #     # the one on the top of the stacking order
+        #     # will be the one that is visible.
+        #     frame.grid(row=0, column=0, sticky="nsew")
 
-        self.show_frame("ViewFinderPage")
+        # self.show_frame("ViewFinderPage")
 
-    def show_frame(self, page_name):
+    def show_frame(self, page_name, previewImg=None):
         '''Show a frame for the given page name'''
         frame = self.frames[page_name]
         frame.tkraise()
 
 
-class ViewFinderPage(tk.Frame):
-
+class ViewFinderPage(tk.Frame):        
+    
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.controller = controller
@@ -83,10 +92,21 @@ class ViewFinderPage(tk.Frame):
             label.after(20, show_frames)
         show_frames()  
 
+        def takePic():
+            c2 = cv2.VideoCapture(2)
 
+            ret,img1 = c2.read()
+            if ret:
+                cv2.imwrite("./preview.jpeg",img1)
+            else:
+                print(ret)
+            controller.show_frame("PreviewPage")
+            return
+            
         button = tk.Button(self, text="Placeholder for taking an Image ",
-                    command=lambda: controller.show_frame("PreviewPage"))
+                    command=lambda: takePic())
         button.pack()
+        
 class PreviewPage(tk.Frame):
 
     def __init__(self, parent, controller):
